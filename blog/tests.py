@@ -4,12 +4,11 @@ from tempfile import TemporaryDirectory
 from PIL import Image
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import override_settings
-from django.test import TestCase
+from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 from .markdown import render_markdown
-from .models import Category, Comment, Post, SiteSetting, Tag
+from .models import Category, Comment, Post, PostViewDaily, SiteSetting, Tag
 
 class BlogTests(TestCase):
     def setUp(self):
@@ -30,6 +29,28 @@ class BlogTests(TestCase):
     def test_frontend_loads_image_lightbox(self):
         response = self.client.get(self.published.get_absolute_url())
         self.assertContains(response, "js/lightbox.js")
+
+    def test_post_views_are_deduplicated_and_aggregated(self):
+        response = self.client.get(self.published.get_absolute_url())
+        self.published.refresh_from_db()
+        self.assertEqual(self.published.view_count, 1)
+        self.assertContains(response, "1 次阅读")
+        self.client.get(self.published.get_absolute_url())
+        self.published.refresh_from_db()
+        self.assertEqual(self.published.view_count, 1)
+        self.assertEqual(PostViewDaily.objects.get(post=self.published).views, 1)
+
+        session = self.client.session
+        session["recent_post_views"] = {str(self.published.pk): 0}
+        session.save()
+        self.client.get(self.published.get_absolute_url())
+        self.published.refresh_from_db()
+        self.assertEqual(self.published.view_count, 2)
+        self.assertEqual(PostViewDaily.objects.get(post=self.published).views, 2)
+
+        Client(HTTP_USER_AGENT="Googlebot/2.1").get(self.published.get_absolute_url())
+        self.published.refresh_from_db()
+        self.assertEqual(self.published.view_count, 2)
 
     def test_comments_can_be_nested_and_are_escaped(self):
         url = reverse("add_comment", args=[self.published.slug])

@@ -10,12 +10,13 @@ from uuid import uuid4
 from PIL import Image, UnidentifiedImageError
 from django import forms
 from django.contrib import admin
+from django.db.models import Count
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from django.http import JsonResponse
 from django.urls import path
 from django.utils import timezone
-from .models import Category, Comment, Post, SiteSetting, Tag
+from .models import Category, Comment, Post, PostViewDaily, SiteSetting, Tag
 
 MAX_IMAGE_BYTES = 10 * 1024 * 1024
 ALLOWED_IMAGE_FORMATS = {"JPEG": ".jpg", "PNG": ".png", "GIF": ".gif", "WEBP": ".webp"}
@@ -119,13 +120,20 @@ admin.site.site_title = "片刻"
 @admin.register(Post)
 class PostAdmin(admin.ModelAdmin):
     form = PostAdminForm
-    list_display = ("title", "status", "comments_enabled", "category", "published_at", "updated_at")
+    list_display = ("title", "status", "view_count", "comment_count", "comments_enabled", "category", "published_at", "updated_at")
     list_filter = ("status", "category", "tags")
     search_fields = ("title", "excerpt", "body")
     prepopulated_fields = {"slug": ("title",)}
     filter_horizontal = ("tags",)
     date_hierarchy = "published_at"
     actions = ("publish", "make_draft")
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).annotate(_comment_count=Count("comments", distinct=True))
+
+    @admin.display(description="评论数", ordering="_comment_count")
+    def comment_count(self, obj):
+        return obj._comment_count
     class Media:
         css = {"all": ("vendor/toastui-editor.css", "admin/post-editor.css")}
         js = ("vendor/purify.min.js", "vendor/toastui-editor.js", "admin/post-editor.js")
@@ -179,6 +187,18 @@ class CommentAdmin(admin.ModelAdmin):
 
     def has_add_permission(self, request):
         return False
+
+
+@admin.register(PostViewDaily)
+class PostViewDailyAdmin(admin.ModelAdmin):
+    list_display = ("date", "post", "views")
+    list_filter = ("date",)
+    search_fields = ("post__title",)
+    date_hierarchy = "date"
+
+    def has_add_permission(self, request): return False
+    def has_change_permission(self, request, obj=None): return False
+    def has_delete_permission(self, request, obj=None): return False
 
 @admin.register(SiteSetting)
 class SiteSettingAdmin(admin.ModelAdmin):

@@ -7,6 +7,7 @@ from datetime import timedelta
 
 from PIL import Image, ImageDraw
 from django.db.models import Q
+from django.db.models import F
 from django.db import transaction
 from django.http import Http404, HttpResponse
 from django.contrib import messages
@@ -15,10 +16,30 @@ from django.utils import timezone
 from django.utils.crypto import salted_hmac
 from django.views.generic import DetailView, ListView, TemplateView
 from .forms import CommentForm
-from .models import Category, Comment, CommentThrottle, Post, SiteSetting, Tag
+from .models import Category, Comment, CommentThrottle, Post, PostViewDaily, SiteSetting, Tag
 
 CAPTCHA_SESSION_KEY = "comment_captcha"
 CAPTCHA_ALPHABET = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ"
+BOT_MARKERS = ("bot", "spider", "crawler", "slurp", "preview", "facebookexternalhit", "curl", "wget")
+
+
+def _record_post_view(request, post):
+    user_agent = request.headers.get("User-Agent", "").lower()
+    if any(marker in user_agent for marker in BOT_MARKERS):
+        return False
+    now = int(time.time())
+    viewed = request.session.get("recent_post_views", {})
+    key = str(post.pk)
+    if now - int(viewed.get(key, 0)) < 1800:
+        return False
+    with transaction.atomic():
+        Post.objects.filter(pk=post.pk).update(view_count=F("view_count") + 1)
+        daily, _ = PostViewDaily.objects.get_or_create(post=post, date=timezone.localdate())
+        PostViewDaily.objects.filter(pk=daily.pk).update(views=F("views") + 1)
+    viewed[key] = now
+    request.session["recent_post_views"] = dict(sorted(viewed.items(), key=lambda item: item[1], reverse=True)[:100])
+    post.view_count += 1
+    return True
 
 
 def _visitor_fingerprint(request):
@@ -88,6 +109,8 @@ class PostDetailView(DetailView):
         return qs.published()
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        if not (self.request.user.is_staff and self.request.GET.get("preview") == "1"):
+            _record_post_view(self.request, self.object)
         comments = list(self.object.comments.filter(is_approved=True).select_related("parent"))
         by_id = {comment.pk: comment for comment in comments}
         roots = []

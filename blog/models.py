@@ -33,6 +33,7 @@ class Post(models.Model):
     excerpt = models.TextField("摘要", max_length=300, blank=True)
     body = models.TextField("正文（Markdown）")
     comments_enabled = models.BooleanField("允许评论", default=True)
+    view_count = models.PositiveBigIntegerField("阅读量", default=0, editable=False)
     cover = models.ImageField("封面", upload_to="covers/%Y/%m/", blank=True)
     category = models.ForeignKey(Category, verbose_name="分类", null=True, blank=True, on_delete=models.SET_NULL, related_name="posts")
     tags = models.ManyToManyField(Tag, verbose_name="标签", blank=True, related_name="posts")
@@ -77,6 +78,21 @@ class CommentThrottle(models.Model):
     class Meta:
         verbose_name = "评论限流记录"
         verbose_name_plural = "评论限流记录"
+
+
+class PostViewDaily(models.Model):
+    post = models.ForeignKey(Post, verbose_name="文章", on_delete=models.CASCADE, related_name="daily_views")
+    date = models.DateField("日期")
+    views = models.PositiveIntegerField("阅读量", default=0)
+
+    class Meta:
+        ordering = ["-date", "-views"]
+        constraints = [models.UniqueConstraint(fields=("post", "date"), name="unique_post_view_date")]
+        verbose_name = "每日阅读数据"
+        verbose_name_plural = "每日阅读数据"
+
+    def __str__(self):
+        return f"{self.post} · {self.date} · {self.views}"
 
 
 class SiteSetting(models.Model):
