@@ -1,0 +1,7 @@
+.quiet-editor-source { width: min(1100px, 100%); min-height: 420px; }
+.quiet-editor-source.quiet-editor-initialized { display: none; }
+.quiet-editor-shell { width: min(1100px, 100%); }
+.quiet-editor-status { min-height: 1.5rem; margin-top: .5rem; color: var(--body-quiet-color, #666); }
+.quiet-editor-status.error { color: var(--error-fg, #ba2121); }
+.toastui-editor-defaultUI { font-family: var(--font-family-primary, sans-serif); }
+.toastui-editor-contents { font-size: 16px; }

@@ -1,0 +1,26 @@
+{% load static %}<!doctype html>
+<html lang="zh-CN" class="scroll-smooth">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{% block title %}{{ site.title }}{% endblock %}</title>
+  <meta name="description" content="{% block description %}{{ site.tagline }}{% endblock %}">
+  <meta property="og:title" content="{% block og_title %}{{ site.title }}{% endblock %}">
+  <meta property="og:description" content="{% block og_description %}{{ site.tagline }}{% endblock %}">
+  <meta property="og:type" content="{% block og_type %}website{% endblock %}">
+  <link rel="canonical" href="{{ request.build_absolute_uri }}">{% if site.rss_enabled %}<link rel="alternate" type="application/rss+xml" href="{% url 'rss' %}">{% endif %}
+  <link rel="stylesheet" href="{% static 'css/site.css' %}">
+  <link rel="stylesheet" href="{% static 'css/lightbox.css' %}">
+  <link rel="stylesheet" href="{% static 'css/comments.css' %}">
+  <link rel="stylesheet" href="{% static 'css/captcha.css' %}">
+  <script src="{% static 'js/theme.js' %}"></script>
+</head>
+<body>
+  <header class="site-header"><a class="brand" href="{% url 'home' %}">{{ site.title }}</a>
+    <nav aria-label="主导航"><a href="{% url 'archive' %}">归档</a><a href="{% url 'about' %}">关于</a><a href="{% url 'search' %}" aria-label="搜索">搜索</a><button id="theme" aria-label="切换明暗主题">◐</button></nav>
+  </header>
+  {% if messages %}<div class="flash-messages" aria-live="polite">{% for message in messages %}<p class="{{ message.tags }}">{{ message }}</p>{% endfor %}</div>{% endif %}
+  <main>{% block content %}{% endblock %}</main>
+  <footer><span>{{ site.footer|default:site.tagline }}</span>{% if site.rss_enabled %}<a href="{% url 'rss' %}">RSS</a>{% endif %}</footer>
+  <script src="{% static 'js/lightbox.js' %}"></script>
+  <script src="{% static 'js/comments.js' %}"></script>
+</body></html>

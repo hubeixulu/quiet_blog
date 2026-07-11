@@ -1,0 +1,25 @@
+{% extends 'base.html' %}{% load blog_tags %}
+{% block title %}{{ post.title }} · {{ site.title }}{% endblock %}{% block description %}{{ post.excerpt|default:site.tagline }}{% endblock %}
+{% block og_title %}{{ post.title }}{% endblock %}{% block og_description %}{{ post.excerpt }}{% endblock %}{% block og_type %}article{% endblock %}
+{% block content %}<article class="article">
+  <header><div class="meta"><time>{{ post.published_at|date:"Y年n月j日" }}</time>{% if post.category %}<a href="{% url 'taxonomy' 'categories' post.category.slug %}">{{ post.category.name }}</a>{% endif %}</div><h1>{{ post.title }}</h1>{% if post.excerpt %}<p class="lead">{{ post.excerpt }}</p>{% endif %}</header>
+  {% if post.cover %}<img class="cover" src="{{ post.cover.url }}" alt="{{ post.title }}封面">{% endif %}
+  <div class="prose">{{ post.body|markdown }}</div>
+  {% if post.tags.all %}<div class="tags">{% for tag in post.tags.all %}<a href="{% url 'taxonomy' 'tags' tag.slug %}"># {{ tag.name }}</a>{% endfor %}</div>{% endif %}
+  <section class="comments" id="comments" aria-labelledby="comments-title">
+    <h2 id="comments-title">评论 <span>{{ comment_count }}</span></h2>
+    {% if comment_roots %}<ol class="comment-tree">{% for comment in comment_roots %}{% include "blog/_comment.html" %}{% endfor %}</ol>{% else %}<p class="comment-empty">还没有评论。</p>{% endif %}
+    {% if post.comments_enabled %}
+      <form class="comment-form" id="comment-form" method="post" action="{% url 'add_comment' post.slug %}">
+        {% csrf_token %}
+        <div class="replying-to" hidden>正在回复 <strong></strong><button type="button">取消回复</button></div>
+        {{ comment_form.parent_id }}{{ comment_form.website }}
+        <label for="{{ comment_form.name.id_for_label }}">昵称</label>{{ comment_form.name }}
+        <label for="{{ comment_form.body.id_for_label }}">评论</label>{{ comment_form.body }}
+        <label for="{{ comment_form.captcha.id_for_label }}">验证码</label>
+        <div class="captcha-row"><img src="{% url 'comment_captcha' %}" alt="评论验证码" width="150" height="48"><button type="button" class="captcha-refresh">换一张</button>{{ comment_form.captcha }}</div>
+        <button class="comment-submit" type="submit">发表评论</button>
+      </form>
+    {% else %}<p class="comments-closed">这篇文章已关闭评论。</p>{% endif %}
+  </section>
+</article>{% endblock %}

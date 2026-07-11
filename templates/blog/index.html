@@ -1,0 +1,5 @@
+{% extends 'base.html' %}{% block content %}
+<section class="hero"><p class="eyebrow">PERSONAL JOURNAL</p><h1>{{ site.tagline }}</h1><p>一些观察，一些心绪，以及值得留下的片刻。</p></section>
+<section class="feed">{% include 'blog/_post_list.html' %}{% include 'blog/_pagination.html' %}</section>
+{% endblock %}
+

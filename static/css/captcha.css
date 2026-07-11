@@ -1,0 +1,4 @@
+.captcha-row { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; }
+.captcha-row img { border: 1px solid var(--line); border-radius: 3px; }
+.captcha-row input { width: 190px !important; }
+.captcha-refresh { border: 0; background: none; color: var(--accent); cursor: pointer; }

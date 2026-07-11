@@ -1,0 +1,4 @@
+{% extends 'base.html' %}{% block title %}搜索 · {{ site.title }}{% endblock %}{% block content %}
+<section class="page-head"><p class="eyebrow">SEARCH</p><h1>寻找一段文字</h1><form class="search" method="get"><input name="q" value="{{ query }}" placeholder="输入关键词…" autofocus><button>搜索</button></form></section>
+{% if query %}<section class="feed"><p class="result">“{{ query }}”的搜索结果</p>{% include 'blog/_post_list.html' %}{% include 'blog/_pagination.html' %}</section>{% endif %}{% endblock %}
+

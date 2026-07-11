@@ -1,0 +1,8 @@
+{% for post in posts %}
+<article class="post-card">
+  <div class="meta"><time datetime="{{ post.published_at|date:'c' }}">{{ post.published_at|date:"Y.m.d" }}</time>{% if post.category %}<a href="{% url 'taxonomy' 'categories' post.category.slug %}">{{ post.category.name }}</a>{% endif %}</div>
+  <h2><a href="{{ post.get_absolute_url }}">{{ post.title }}</a></h2>
+  {% if post.excerpt %}<p>{{ post.excerpt }}</p>{% endif %}
+</article>
+{% empty %}<div class="empty">这里还很安静，第一篇文字正在路上。</div>{% endfor %}
+

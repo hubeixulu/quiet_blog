@@ -1,0 +1,8 @@
+<li class="comment" id="comment-{{ comment.pk }}">
+  <article>
+    <header><strong>{{ comment.name }}</strong><time datetime="{{ comment.created_at|date:'c' }}">{{ comment.created_at|date:"Y.m.d H:i" }}</time></header>
+    <div class="comment-body">{{ comment.body|linebreaksbr }}</div>
+    {% if post.comments_enabled %}<button class="comment-reply" type="button" data-comment-id="{{ comment.pk }}" data-comment-name="{{ comment.name }}">回复</button>{% endif %}
+  </article>
+  {% if comment.visible_replies %}<ol>{% for comment in comment.visible_replies %}{% include "blog/_comment.html" %}{% endfor %}</ol>{% endif %}
+</li>
