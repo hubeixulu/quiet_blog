@@ -3,6 +3,7 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY static ./static
+COPY assets ./assets
 RUN npm run vendor
 
 FROM python:3.13-slim
