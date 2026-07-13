@@ -157,6 +157,23 @@ class BlogTests(TestCase):
         setting.save()
         self.assertEqual(self.client.get(reverse("rss")).status_code, 200)
 
+    def test_site_favicon_and_icp_number_are_rendered(self):
+        SiteSetting.objects.create(
+            title="测试站点",
+            favicon="site/favicon.png",
+            icp_number="京ICP备12345678号",
+        )
+        response = self.client.get(reverse("home"))
+        self.assertContains(response, '<link rel="icon" href="/media/site/favicon.png">', html=True)
+        self.assertContains(response, "京ICP备12345678号")
+        self.assertContains(response, 'href="https://beian.miit.gov.cn/"')
+
+    def test_empty_favicon_and_icp_number_are_not_rendered(self):
+        SiteSetting.objects.create(title="测试站点")
+        response = self.client.get(reverse("home"))
+        self.assertNotContains(response, '<link rel="icon"')
+        self.assertNotContains(response, "beian.miit.gov.cn")
+
     def test_admin_image_upload_requires_staff_and_stores_valid_image(self):
         upload_url = reverse("admin:blog_post_upload_image")
         self.assertEqual(self.client.post(upload_url).status_code, 302)

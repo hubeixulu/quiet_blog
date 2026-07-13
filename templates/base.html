@@ -8,6 +8,7 @@
   <meta property="og:description" content="{% block og_description %}{{ site.tagline }}{% endblock %}">
   <meta property="og:type" content="{% block og_type %}website{% endblock %}">
   <link rel="canonical" href="{{ request.build_absolute_uri }}">{% if site.rss_enabled %}<link rel="alternate" type="application/rss+xml" href="{% url 'rss' %}">{% endif %}
+  {% if site.favicon %}<link rel="icon" href="{{ site.favicon.url }}">{% endif %}
   <link rel="stylesheet" href="{% static 'css/site.css' %}">
   <link rel="stylesheet" href="{% static 'css/lightbox.css' %}">
   <link rel="stylesheet" href="{% static 'css/comments.css' %}">
@@ -20,7 +21,7 @@
   </header>
   {% if messages %}<div class="flash-messages" aria-live="polite">{% for message in messages %}<p class="{{ message.tags }}">{{ message }}</p>{% endfor %}</div>{% endif %}
   <main>{% block content %}{% endblock %}</main>
-  <footer><span>{{ site.footer|default:site.tagline }}</span>{% if site.rss_enabled %}<a href="{% url 'rss' %}">RSS</a>{% endif %}</footer>
+  <footer><span>{{ site.footer|default:site.tagline }}</span><span class="footer-links">{% if site.icp_number %}<a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">{{ site.icp_number }}</a>{% endif %}{% if site.rss_enabled %}<a href="{% url 'rss' %}">RSS</a>{% endif %}</span></footer>
   <script src="{% static 'js/lightbox.js' %}"></script>
   <script src="{% static 'js/comments.js' %}"></script>
 </body></html>

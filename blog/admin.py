@@ -202,6 +202,12 @@ class PostViewDailyAdmin(admin.ModelAdmin):
 
 @admin.register(SiteSetting)
 class SiteSettingAdmin(admin.ModelAdmin):
+    fieldsets = (
+        ("基本信息", {"fields": ("title", "tagline", "author", "favicon")}),
+        ("内容", {"fields": ("about",)}),
+        ("页脚与备案", {"fields": ("footer", "icp_number", "rss_enabled")}),
+    )
+
     def has_add_permission(self, request):
         return not SiteSetting.objects.exists()
     def has_delete_permission(self, request, obj=None): return False

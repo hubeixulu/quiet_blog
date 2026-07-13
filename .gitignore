@@ -7,3 +7,4 @@ media/
 staticfiles/
 node_modules/
 deploy/certs/*.pem
+.github/workflows/build.yml

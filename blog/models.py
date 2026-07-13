@@ -99,8 +99,20 @@ class SiteSetting(models.Model):
     title = models.CharField("站点名称", max_length=80, default="片刻")
     tagline = models.CharField("一句话介绍", max_length=160, default="记录日常所想")
     author = models.CharField("作者", max_length=80, blank=True)
+    favicon = models.ImageField(
+        "网站图标（Favicon）",
+        upload_to="site/",
+        blank=True,
+        help_text="显示在浏览器标签页中，建议上传正方形的 PNG、ICO 或 WebP 图片。",
+    )
     about = models.TextField("关于（Markdown）", blank=True)
     footer = models.CharField("页脚文字", max_length=160, blank=True)
+    icp_number = models.CharField(
+        "ICP备案号",
+        max_length=80,
+        blank=True,
+        help_text="例如：京ICP备12345678号。填写后会显示在全站页脚。",
+    )
     rss_enabled = models.BooleanField("启用 RSS", default=True)
     class Meta: verbose_name = "站点设置"; verbose_name_plural = "站点设置"
     def __str__(self): return self.title
