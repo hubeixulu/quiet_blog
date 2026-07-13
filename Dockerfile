@@ -1,7 +1,9 @@
 FROM node:22-alpine AS assets
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN npm config set registry https://registry.npmmirror.com \
+    && npm config set replace-registry-host always \
+    && npm ci
 COPY static ./static
 COPY assets ./assets
 RUN npm run vendor
@@ -10,10 +12,16 @@ FROM python:3.13-slim
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
 WORKDIR /app
 COPY requirements.txt .
-RUN apt-get update \
+RUN find /etc/apt -type f \( -name "*.list" -o -name "*.sources" \) \
+        -exec sed -i \
+        -e 's|https*://deb.debian.org/debian-security|https://mirrors.aliyun.com/debian-security|g' \
+        -e 's|https*://deb.debian.org/debian|https://mirrors.aliyun.com/debian|g' {} + \
+    && apt-get update \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends tzdata \
     && rm -rf /var/lib/apt/lists/* \
-    && pip install --no-cache-dir -r requirements.txt
+    && pip install --no-cache-dir \
+        --index-url https://mirrors.aliyun.com/pypi/simple/ \
+        -r requirements.txt
 RUN groupadd --gid 1000 app && useradd --uid 1000 --gid app --create-home app
 COPY --chown=app:app . .
 COPY --from=assets /app/static/vendor ./static/vendor

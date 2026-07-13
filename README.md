@@ -32,6 +32,8 @@ docker compose exec web python manage.py createsuperuser
 
 Web 和 Nginx 容器会共同使用 `.env` 中的 `TIME_ZONE`（默认 `Asia/Shanghai`），因此应用时间与访问日志时间保持一致。修改时区后需要重新创建容器：`docker compose up -d --build --force-recreate`。
 
+镜像构建时，Debian APT、Alpine apk 和 PyPI 使用阿里云镜像，npm 使用 npmmirror，以减少国内服务器下载依赖的等待时间。基础 Docker 镜像仍由 Docker 守护进程拉取；如果拉取基础镜像也很慢，需要另外给服务器上的 Docker 配置可用的 registry mirror。
+
 部署前先把域名解析到服务器，并使用 Certbot、acme.sh 或证书服务商取得证书。Nginx 只启用 TLS 1.2/1.3，会把 HTTP 自动跳转到 HTTPS；证书续期后执行 `docker compose exec nginx nginx -s reload`。配置启用了 HSTS 的 `includeSubDomains` 和 `preload`，因此该域名及其所有子域都必须始终支持 HTTPS；如果做不到，上线前应同时从 Django 设置和 Nginx 配置中关闭这两个参数。
 
 生产环境使用 SQLite，数据库位于 `data` 具名卷，上传图片位于 `media` 卷。至少定期备份这两个卷；SQLite 在线备份应使用 `sqlite3 /path/to/db.sqlite3 ".backup backup.sqlite3"`，不要在写入期间直接复制数据库文件。若从本地迁移现有内容，请在首次启动前或停掉 `web` 服务后把现有 `db.sqlite3` 导入数据卷。
