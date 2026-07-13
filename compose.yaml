@@ -3,6 +3,8 @@ services:
     build: .
     restart: unless-stopped
     env_file: .env
+    environment:
+      TZ: ${TIME_ZONE:-Asia/Shanghai}
     volumes:
       - static:/app/staticfiles
       - media:/app/media
@@ -16,11 +18,14 @@ services:
     security_opt: ["no-new-privileges:true"]
 
   nginx:
-    image: nginx:1.30.3-alpine
+    build:
+      context: .
+      dockerfile: nginx/Dockerfile
     restart: unless-stopped
     environment:
       DOMAIN: ${DOMAIN}
       NGINX_ENVSUBST_FILTER: DOMAIN
+      TZ: ${TIME_ZONE:-Asia/Shanghai}
     ports: ["80:80", "443:443"]
     volumes:
       - ./nginx/default.conf.template:/etc/nginx/templates/default.conf.template:ro

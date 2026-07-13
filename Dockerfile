@@ -10,7 +10,10 @@ FROM python:3.13-slim
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
 WORKDIR /app
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN apt-get update \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends tzdata \
+    && rm -rf /var/lib/apt/lists/* \
+    && pip install --no-cache-dir -r requirements.txt
 RUN groupadd --gid 1000 app && useradd --uid 1000 --gid app --create-home app
 COPY --chown=app:app . .
 COPY --from=assets /app/static/vendor ./static/vendor
