@@ -5,3 +5,6 @@
 .quiet-editor-status.error { color: var(--error-fg, #ba2121); }
 .toastui-editor-defaultUI { font-family: var(--font-family-primary, sans-serif); }
 .toastui-editor-contents { font-size: 16px; }
+.quiet-editor-tools { display: flex; gap: .75rem; align-items: center; margin-bottom: .5rem; }
+.quiet-editor-tools label { display: inline-flex; gap: .4rem; align-items: center; font-weight: 600; }
+.quiet-editor-tools select { min-height: 2rem; }
