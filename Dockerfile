@@ -27,5 +27,10 @@ COPY --chown=app:app . .
 COPY --from=assets /app/static/vendor ./static/vendor
 RUN mkdir -p /app/data /app/media /app/staticfiles && chown -R app:app /app
 USER app
-RUN python manage.py collectstatic --noinput
-CMD ["sh", "-c", "python manage.py migrate && gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 2 --timeout 30 --max-requests 1000 --max-requests-jitter 100 --access-logfile - --error-logfile -"]
+# Build static assets with the same storage backend used at runtime. The
+# temporary key is used only during image construction and is not shipped as
+# the production application secret.
+RUN DJANGO_DEBUG=false \
+    DJANGO_SECRET_KEY=collectstatic-only-build-key-000000000000000000000000 \
+    python manage.py collectstatic --noinput
+CMD ["sh", "-c", "python manage.py migrate && python manage.py collectstatic --noinput && gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 2 --timeout 30 --max-requests 1000 --max-requests-jitter 100 --access-logfile - --error-logfile -"]
