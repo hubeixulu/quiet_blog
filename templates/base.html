@@ -9,7 +9,8 @@
   <meta property="og:type" content="{% block og_type %}website{% endblock %}">
   <link rel="canonical" href="{{ request.build_absolute_uri }}">{% if site.rss_enabled %}<link rel="alternate" type="application/rss+xml" href="{% url 'rss' %}">{% endif %}
   {% if site.favicon %}<link rel="icon" href="{{ site.favicon.url }}">{% endif %}
-  <link rel="stylesheet" href="{% static 'css/site.css' %}">
+  <link rel="stylesheet" href="{% static 'css/site.css' %}?v=20260714-5">
+  <link rel="stylesheet" href="{% static 'css/tables.css' %}?v=20260714-5">
   <link rel="stylesheet" href="{% static 'css/lightbox.css' %}">
   <link rel="stylesheet" href="{% static 'css/comments.css' %}">
   <link rel="stylesheet" href="{% static 'css/captcha.css' %}">

@@ -143,6 +143,67 @@ class BlogTests(TestCase):
         rendered = str(render_markdown("hello<script>alert(1)</script>"))
         self.assertNotIn("<script>", rendered)
 
+    def test_markdown_keeps_legacy_line_breaks_and_spaces(self):
+        rendered = str(render_markdown("第一行\n    缩进第二行"))
+        self.assertIn("<p>第一行</p>", rendered)
+        self.assertIn("<p>&nbsp;&nbsp;&nbsp;&nbsp;缩进第二行</p>", rendered)
+
+    def test_legacy_visual_editor_lines_render_as_paragraphs(self):
+        rendered = str(render_markdown("第一\r\n 正文\r\n第二\r\n第三"))
+        self.assertEqual(rendered.count("<p>"), 4)
+        self.assertIn("<p>&nbsp;正文</p>", rendered)
+
+    def test_visual_editor_html_keeps_paragraphs_and_breaks(self):
+        rendered = str(render_markdown("<p>第一段<br>  第二行</p><p>第二段</p>"))
+        self.assertIn("<p>第一段<br>  第二行</p>", rendered)
+        self.assertIn("<p>第二段</p>", rendered)
+
+    def test_visual_editor_non_breaking_indentation_is_preserved(self):
+        rendered = str(render_markdown("<p>&nbsp;&nbsp;&nbsp;&nbsp;缩进正文</p>"))
+        self.assertIn("<p>&nbsp;&nbsp;&nbsp;&nbsp;缩进正文</p>", rendered)
+
+    def test_visual_editor_table_structure_is_preserved(self):
+        table = "<table><thead><tr><th><p>表头</p></th></tr></thead><tbody><tr><td><p>内容</p></td></tr></tbody></table>"
+        rendered = str(render_markdown(table))
+        self.assertIn("<table>", rendered)
+        self.assertIn("<thead><tr><th><p>表头</p></th></tr></thead>", rendered)
+        self.assertIn("<tbody><tr><td><p>内容</p></td></tr></tbody>", rendered)
+        response = self.client.get(self.published.get_absolute_url())
+        self.assertContains(response, "css/tables.css")
+
+    def test_admin_save_and_reload_keeps_exact_indentation(self):
+        user = get_user_model().objects.create_superuser("writer", "writer@example.com", "pass")
+        self.client.force_login(user)
+        body = "<p>&nbsp;&nbsp;&nbsp;&nbsp;四格缩进</p>"
+        response = self.client.post(reverse("admin:blog_post_add"), {
+            "title": "缩进测试",
+            "slug": "indent-test",
+            "excerpt": "",
+            "body": body,
+            "comments_enabled": "on",
+            "category": "",
+            "tags": [],
+            "status": Post.Status.PUBLISHED,
+            "published_at_0": timezone.localdate().isoformat(),
+            "published_at_1": "12:00:00",
+            "_save": "保存",
+        })
+        self.assertEqual(response.status_code, 302)
+        post = Post.objects.get(slug="indent-test")
+        self.assertEqual(post.body, body)
+        edit_page = self.client.get(reverse("admin:blog_post_change", args=[post.pk]))
+        self.assertContains(edit_page, "&amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;四格缩进", html=False)
+        self.assertContains(self.client.get(post.get_absolute_url()), body, html=False)
+
+    def test_admin_reopens_legacy_single_lines_as_paragraphs_and_uses_versioned_editor(self):
+        user = get_user_model().objects.create_superuser("legacy-writer", "legacy@example.com", "pass")
+        self.client.force_login(user)
+        self.published.body = "第一\r\n 正文\r\n第二"
+        self.published.save(update_fields=["body"])
+        response = self.client.get(reverse("admin:blog_post_change", args=[self.published.pk]))
+        self.assertContains(response, "第一\n\n&amp;nbsp;正文\n\n第二", html=False)
+        self.assertContains(response, "/static/admin/post-editor.js?v=20260714-4", html=False)
+
     def test_site_setting_is_singleton(self):
         first = SiteSetting.objects.create(title="A"); second = SiteSetting(title="B"); second.save()
         self.assertEqual(SiteSetting.objects.count(), 1); self.assertEqual(SiteSetting.objects.get().title, "B")

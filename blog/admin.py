@@ -16,6 +16,7 @@ from django.core.files.storage import default_storage
 from django.http import JsonResponse
 from django.urls import path
 from django.utils import timezone
+from .markdown import HTML_BLOCK, _prepare_legacy_text
 from .models import Category, Comment, Post, PostViewDaily, SiteSetting, Tag
 
 MAX_IMAGE_BYTES = 10 * 1024 * 1024
@@ -109,6 +110,16 @@ def _store_image(data):
 
 
 class PostAdminForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not self.is_bound:
+            body = self.initial.get("body") or getattr(self.instance, "body", "")
+            if body and not HTML_BLOCK.match(body):
+                # Old posts used Markdown single line breaks, which Toast UI
+                # reopens as soft wraps in one paragraph. Give the editor real
+                # paragraph separators before any browser-side code runs.
+                self.initial["body"] = _prepare_legacy_text(body)
+
     class Meta:
         model = Post
         fields = "__all__"
@@ -135,8 +146,8 @@ class PostAdmin(admin.ModelAdmin):
     def comment_count(self, obj):
         return obj._comment_count
     class Media:
-        css = {"all": ("vendor/toastui-editor.css", "admin/post-editor.css")}
-        js = ("vendor/purify.min.js", "vendor/toastui-editor.js", "admin/post-editor.js")
+        css = {"all": ("vendor/toastui-editor.css", "/static/admin/post-editor.css?v=20260714-4")}
+        js = ("vendor/purify.min.js", "vendor/toastui-editor.js", "/static/admin/post-editor.js?v=20260714-4")
 
     def get_urls(self):
         custom_urls = [
