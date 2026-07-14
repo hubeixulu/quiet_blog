@@ -1,7 +1,10 @@
-.quiet-editor-source { width: min(1100px, 100%); min-height: 620px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; white-space: pre-wrap; }
+.quiet-editor-source { width: min(1100px, 100%); min-height: 420px; }
+.quiet-editor-source.quiet-editor-initialized { display: none; }
 .quiet-editor-shell { width: min(1100px, 100%); }
 .quiet-editor-status { min-height: 1.5rem; margin-top: .5rem; color: var(--body-quiet-color, #666); }
 .quiet-editor-status.error { color: var(--error-fg, #ba2121); }
+.toastui-editor-defaultUI { font-family: var(--font-family-primary, sans-serif); }
+.toastui-editor-contents { font-size: 16px; }
 .quiet-editor-tools { display: flex; gap: .75rem; align-items: center; margin-bottom: .5rem; }
 .quiet-editor-tools label { display: inline-flex; gap: .4rem; align-items: center; font-weight: 600; }
 .quiet-editor-tools select { min-height: 2rem; }
