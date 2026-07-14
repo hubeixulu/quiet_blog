@@ -37,41 +37,6 @@
     return result.url;
   }
 
-
-  function escapeHtml(text) {
-    return String(text).replace(/[&<>"']/g, function (char) {
-      return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char];
-    });
-  }
-
-  function fontSizeControl(editor, source, message) {
-    var bar = document.createElement("div");
-    bar.className = "quiet-editor-tools";
-    var label = document.createElement("label");
-    label.textContent = "字号";
-    var select = document.createElement("select");
-    select.innerHTML = [
-      '<option value="">选择字号</option>',
-      '<option value="font-size-small">小号</option>',
-      '<option value="font-size-normal">正文</option>',
-      '<option value="font-size-large">大号</option>',
-      '<option value="font-size-x-large">特大</option>',
-      '<option value="font-size-title">标题级</option>'
-    ].join("");
-    label.append(select);
-    bar.append(label);
-    select.addEventListener("change", function () {
-      if (!select.value) return;
-      var selected = editor.getSelectedText() || "要调整字号的文字";
-      editor.replaceSelection('<span class="' + select.value + '">' + escapeHtml(selected) + '</span>');
-      source.value = editor.getMarkdown();
-      message("已插入字号标记，可在预览中查看效果");
-      select.value = "";
-      editor.focus();
-    });
-    return bar;
-  }
-
   function start() {
     var source = document.querySelector("textarea.quiet-editor-source");
     if (!source) return;
@@ -98,7 +63,7 @@
       editor = new window.toastui.Editor({
         el: mount,
         height: "620px",
-        initialEditType: "markdown",
+        initialEditType: "wysiwyg",
         language: "zh-CN",
         previewStyle: "vertical",
         initialValue: source.value,
@@ -124,7 +89,6 @@
       console.error("Quiet Blog editor failed to initialize", error);
       return;
     }
-    shell.prepend(fontSizeControl(editor, source, message));
     source.classList.add("quiet-editor-initialized");
 
     mount.addEventListener("paste", function (event) {
