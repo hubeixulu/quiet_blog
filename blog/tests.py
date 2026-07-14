@@ -143,6 +143,17 @@ class BlogTests(TestCase):
         rendered = str(render_markdown("hello<script>alert(1)</script>"))
         self.assertNotIn("<script>", rendered)
 
+    def test_markdown_keeps_safe_font_size_classes(self):
+        rendered = str(render_markdown('<span class="font-size-large">大字</span><span onclick="alert(1)">坏属性</span>'))
+        self.assertIn('<span class="font-size-large">大字</span>', rendered)
+        self.assertIn('<span>坏属性</span>', rendered)
+        self.assertNotIn("onclick", rendered)
+
+    def test_markdown_keeps_source_line_breaks(self):
+        rendered = str(render_markdown("第一行\n    缩进第二行"))
+        self.assertIn("第一行<br", rendered)
+        self.assertIn("    缩进第二行", rendered)
+
     def test_site_setting_is_singleton(self):
         first = SiteSetting.objects.create(title="A"); second = SiteSetting(title="B"); second.save()
         self.assertEqual(SiteSetting.objects.count(), 1); self.assertEqual(SiteSetting.objects.get().title, "B")
