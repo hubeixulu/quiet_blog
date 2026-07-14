@@ -143,6 +143,17 @@ class BlogTests(TestCase):
         rendered = str(render_markdown("hello<script>alert(1)</script>"))
         self.assertNotIn("<script>", rendered)
 
+    def test_markdown_keeps_safe_font_size_classes(self):
+        rendered = str(render_markdown('<span class="font-size-large">大字</span><span onclick="alert(1)">坏属性</span>'))
+        self.assertIn('<span class="font-size-large">大字</span>', rendered)
+        self.assertIn('<span>坏属性</span>', rendered)
+        self.assertNotIn("onclick", rendered)
+
+    def test_markdown_keeps_source_line_breaks(self):
+        rendered = str(render_markdown("第一行\n    缩进第二行"))
+        self.assertIn("第一行<br", rendered)
+        self.assertIn("    缩进第二行", rendered)
+
     def test_site_setting_is_singleton(self):
         first = SiteSetting.objects.create(title="A"); second = SiteSetting(title="B"); second.save()
         self.assertEqual(SiteSetting.objects.count(), 1); self.assertEqual(SiteSetting.objects.get().title, "B")
@@ -173,6 +184,16 @@ class BlogTests(TestCase):
         response = self.client.get(reverse("home"))
         self.assertNotContains(response, '<link rel="icon"')
         self.assertNotContains(response, "beian.miit.gov.cn")
+
+
+    def test_post_admin_uses_cache_busted_source_editor_assets(self):
+        user = get_user_model().objects.create_superuser("assetadmin", "asset@example.com", "pass")
+        self.client.force_login(user)
+        response = self.client.get(reverse("admin:blog_post_change", args=[self.published.pk]))
+        self.assertContains(response, "admin/source-editor.js")
+        self.assertContains(response, "admin/source-editor.css")
+        self.assertNotContains(response, "admin/post-editor.js")
+        self.assertNotContains(response, "admin/post-editor.css")
 
     def test_admin_image_upload_requires_staff_and_stores_valid_image(self):
         upload_url = reverse("admin:blog_post_upload_image")

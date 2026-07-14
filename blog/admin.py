@@ -135,8 +135,8 @@ class PostAdmin(admin.ModelAdmin):
     def comment_count(self, obj):
         return obj._comment_count
     class Media:
-        css = {"all": ("vendor/toastui-editor.css", "admin/post-editor.css")}
-        js = ("vendor/purify.min.js", "vendor/toastui-editor.js", "admin/post-editor.js")
+        css = {"all": ("admin/source-editor.css",)}
+        js = ("admin/source-editor.js",)
 
     def get_urls(self):
         custom_urls = [
