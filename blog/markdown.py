@@ -6,6 +6,6 @@ ALLOWED_TAGS = set(bleach.sanitizer.ALLOWED_TAGS) | {"p", "h1", "h2", "h3", "h4"
 ALLOWED_ATTRS = {"span": ["class"], "a": ["href", "title"], "img": ["src", "alt", "title"], "code": ["class"]}
 
 def render_markdown(value):
-    html = markdown.markdown(value or "", extensions=["extra", "sane_lists"])
+    html = markdown.markdown(value or "", extensions=["extra", "sane_lists", "nl2br"])
     return mark_safe(bleach.clean(html, tags=ALLOWED_TAGS, attributes=ALLOWED_ATTRS, protocols={"http", "https", "mailto"}))
 

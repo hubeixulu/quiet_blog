@@ -25,16 +25,22 @@
     return result.url;
   }
 
-  async function importRemote(url) {
-    var response = await fetch(uploadUrl(), {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-CSRFToken": decodeURIComponent(csrfToken()) },
-      body: JSON.stringify({ url: url }),
-      credentials: "same-origin"
+  function escapeHtml(text) {
+    return String(text).replace(/[&<>"']/g, function (char) {
+      return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char];
     });
-    var result = await response.json();
-    if (!response.ok) throw new Error(result.error || "远程图片转存失败");
-    return result.url;
+  }
+
+  function selectedText(source) {
+    return source.value.slice(source.selectionStart, source.selectionEnd);
+  }
+
+  function replaceSelection(source, text) {
+    var start = source.selectionStart;
+    var end = source.selectionEnd;
+    source.setRangeText(text, start, end, "end");
+    source.dispatchEvent(new Event("input", { bubbles: true }));
+    source.focus();
   }
 
 
@@ -75,85 +81,60 @@
   function start() {
     var source = document.querySelector("textarea.quiet-editor-source");
     if (!source) return;
-    if (!window.toastui?.Editor) {
-      source.insertAdjacentHTML("afterend", '<p class="errornote">可视化编辑器资源加载失败，当前可继续使用 Markdown 输入框。</p>');
-      return;
-    }
+
     var shell = document.createElement("div");
     shell.className = "quiet-editor-shell";
-    var mount = document.createElement("div");
+    var tools = document.createElement("div");
+    tools.className = "quiet-editor-tools";
     var status = document.createElement("div");
     status.className = "quiet-editor-status";
     status.setAttribute("aria-live", "polite");
-    shell.append(mount, status);
-    source.after(shell);
 
     function message(text, error) {
       status.textContent = text || "";
       status.classList.toggle("error", Boolean(error));
     }
 
-    var editor;
-    try {
-      editor = new window.toastui.Editor({
-        el: mount,
-        height: "620px",
-        initialEditType: "markdown",
-        language: "zh-CN",
-        previewStyle: "vertical",
-        initialValue: source.value,
-        usageStatistics: false,
-        customHTMLSanitizer: function (html) { return window.DOMPurify.sanitize(html); },
-        hooks: {
-          addImageBlobHook: function (blob, callback) {
-            message("正在上传图片…");
-            uploadBlob(blob).then(function (url) {
-              callback(url, blob.name || "图片");
-              message("图片已上传");
-            }).catch(function (error) { message(error.message, true); });
-            return false;
-          }
-        },
-        events: {
-          change: function () { source.value = editor.getMarkdown(); }
-        }
-      });
-    } catch (error) {
-      shell.remove();
-      source.insertAdjacentHTML("afterend", '<p class="errornote">可视化编辑器加载失败，已保留 Markdown 输入框。</p>');
-      console.error("Quiet Blog editor failed to initialize", error);
-      return;
-    }
-    shell.prepend(fontSizeControl(editor, source, message));
+    var fontLabel = document.createElement("label");
+    fontLabel.textContent = "字号";
+    var fontSelect = document.createElement("select");
+    fontSelect.innerHTML = [
+      '<option value="">选择字号</option>',
+      '<option value="font-size-small">小号</option>',
+      '<option value="font-size-normal">正文</option>',
+      '<option value="font-size-large">大号</option>',
+      '<option value="font-size-x-large">特大</option>',
+      '<option value="font-size-title">标题级</option>'
+    ].join("");
+    fontLabel.append(fontSelect);
+    tools.append(fontLabel);
+
+    shell.append(tools, status);
+    source.before(shell);
     source.classList.add("quiet-editor-initialized");
 
-    mount.addEventListener("paste", function (event) {
-      var html = event.clipboardData?.getData("text/html") || "";
-      if (!html || event.clipboardData?.files.length) return;
-      var documentFragment = new DOMParser().parseFromString(html, "text/html");
-      var urls = Array.from(documentFragment.images).map(function (img) { return img.src; })
-        .filter(function (url) { return /^https?:\/\//i.test(url); });
-      if (!urls.length) return;
-      window.setTimeout(async function () {
-        message("正在转存粘贴内容中的图片…");
-        try {
-          var pastedDocument = new DOMParser().parseFromString(editor.getHTML(), "text/html");
-          var remoteImages = Array.from(pastedDocument.images).filter(function (img) {
-            return urls.includes(img.src);
-          });
-          var imported = new Map();
-          for (var image of remoteImages) {
-            if (!imported.has(image.src)) imported.set(image.src, await importRemote(image.src));
-            image.src = imported.get(image.src);
-          }
-          editor.setHTML(pastedDocument.body.innerHTML, false);
-          source.value = editor.getMarkdown();
-          message("粘贴的图片已保存到本站");
-        } catch (error) { message(error.message, true); }
-      }, 100);
+    fontSelect.addEventListener("change", function () {
+      if (!fontSelect.value) return;
+      var text = selectedText(source) || "要调整字号的文字";
+      replaceSelection(source, '<span class="' + fontSelect.value + '">' + escapeHtml(text) + '</span>');
+      message("已插入字号标记，发布后会按所选字号显示");
+      fontSelect.value = "";
     });
 
-    source.form?.addEventListener("submit", function () { source.value = editor.getMarkdown(); });
+    source.addEventListener("paste", function (event) {
+      var files = Array.from(event.clipboardData?.files || []).filter(function (file) {
+        return file.type.startsWith("image/");
+      });
+      if (!files.length) return;
+      event.preventDefault();
+      message("正在上传粘贴的图片…");
+      Promise.all(files.map(uploadBlob)).then(function (urls) {
+        replaceSelection(source, urls.map(function (url, index) {
+          return "![图片" + (index + 1) + "](" + url + ")";
+        }).join("\n"));
+        message("图片已上传并插入 Markdown");
+      }).catch(function (error) { message(error.message, true); });
+    });
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start);

@@ -149,6 +149,11 @@ class BlogTests(TestCase):
         self.assertIn('<span>坏属性</span>', rendered)
         self.assertNotIn("onclick", rendered)
 
+    def test_markdown_keeps_source_line_breaks(self):
+        rendered = str(render_markdown("第一行\n    缩进第二行"))
+        self.assertIn("第一行<br", rendered)
+        self.assertIn("    缩进第二行", rendered)
+
     def test_site_setting_is_singleton(self):
         first = SiteSetting.objects.create(title="A"); second = SiteSetting(title="B"); second.save()
         self.assertEqual(SiteSetting.objects.count(), 1); self.assertEqual(SiteSetting.objects.get().title, "B")
