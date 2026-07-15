@@ -26,6 +26,20 @@ class BlogTests(TestCase):
         response = self.client.get(reverse("home"))
         self.assertContains(response, "第一篇"); self.assertNotContains(response, "秘密"); self.assertNotContains(response, "明天")
 
+    def test_home_shows_compact_published_post_statistics(self):
+        Post.objects.filter(pk=self.published.pk).update(view_count=12)
+        Post.objects.filter(pk=self.draft.pk).update(view_count=99)
+        PostViewDaily.objects.create(post=self.published, date=timezone.localdate(), views=3)
+        PostViewDaily.objects.create(post=self.draft, date=timezone.localdate(), views=88)
+
+        response = self.client.get(reverse("home"))
+
+        self.assertContains(response, 'class="home-stats"')
+        self.assertContains(response, "<dt>文章</dt><dd>1</dd>", html=True)
+        self.assertContains(response, "<dt>总阅读</dt><dd>12</dd>", html=True)
+        self.assertContains(response, "<dt>今日阅读</dt><dd>3</dd>", html=True)
+        self.assertContains(response, "<dt>写作</dt><dd>1 天</dd>", html=True)
+
     def test_frontend_loads_image_lightbox(self):
         response = self.client.get(self.published.get_absolute_url())
         self.assertContains(response, "js/lightbox.js")
@@ -170,6 +184,27 @@ class BlogTests(TestCase):
         self.assertIn("<tbody><tr><td><p>内容</p></td></tr></tbody>", rendered)
         response = self.client.get(self.published.get_absolute_url())
         self.assertContains(response, "css/tables.css")
+
+    def test_visual_editor_task_lists_and_horizontal_rule_are_preserved(self):
+        body = (
+            '<p>正文</p><div><hr></div><ul>'
+            '<li class="task-list-item checked" data-task="true" data-task-checked="true"><p>完成</p></li>'
+            '<li class="task-list-item" data-task="true"><p>未完成</p></li>'
+            '</ul>'
+        )
+        rendered = str(render_markdown(body))
+        self.assertIn("<hr>", rendered)
+        self.assertNotIn("&lt;div&gt;", rendered)
+        self.assertNotIn("<div>", rendered)
+        self.assertIn(
+            '<li class="task-list-item checked" data-task="true" data-task-checked="true">',
+            rendered,
+        )
+        self.assertIn('<li class="task-list-item" data-task="true">', rendered)
+
+    def test_visual_editor_html_is_sanitized_without_markdown_reprocessing(self):
+        rendered = str(render_markdown('<p>安全内容</p><script>alert(1)</script>'))
+        self.assertEqual(rendered, "<p>安全内容</p>alert(1)")
 
     def test_admin_save_and_reload_keeps_exact_indentation(self):
         user = get_user_model().objects.create_superuser("writer", "writer@example.com", "pass")

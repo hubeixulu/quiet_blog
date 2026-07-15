@@ -6,8 +6,7 @@ from io import BytesIO
 from datetime import timedelta
 
 from PIL import Image, ImageDraw
-from django.db.models import Q
-from django.db.models import F
+from django.db.models import Count, F, Min, Q, Sum
 from django.db import transaction
 from django.http import Http404, HttpResponse
 from django.contrib import messages
@@ -100,6 +99,29 @@ def comment_captcha(request):
 class PostListView(ListView):
     template_name = "blog/index.html"; context_object_name = "posts"; paginate_by = 8
     def get_queryset(self): return Post.objects.published().select_related("category").prefetch_related("tags")
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        if self.template_name == "blog/index.html":
+            published = Post.objects.published()
+            summary = published.aggregate(
+                post_count=Count("id"),
+                total_views=Sum("view_count"),
+                first_published_at=Min("published_at"),
+            )
+            first_published_at = summary["first_published_at"]
+            context["home_stats"] = {
+                "post_count": summary["post_count"],
+                "total_views": summary["total_views"] or 0,
+                "today_views": PostViewDaily.objects.filter(
+                    post__in=published,
+                    date=timezone.localdate(),
+                ).aggregate(total=Sum("views"))["total"] or 0,
+                "writing_days": (
+                    (timezone.localdate() - timezone.localdate(first_published_at)).days + 1
+                    if first_published_at else 0
+                ),
+            }
+        return context
 
 class PostDetailView(DetailView):
     model = Post; template_name = "blog/detail.html"; context_object_name = "post"; slug_url_kwarg = "slug"
